@@ -1,8 +1,11 @@
+import logging
 import os
 import requests
 
 from dotenv import load_dotenv
 from random import randint
+from requests.exceptions import HTTPError, ConnectionError
+
 
 def get_comic_json(comic_number):
     xkcd_url = 'https://xkcd.com/'
@@ -22,6 +25,7 @@ def download_image(comic_json):
 
     with open(filename, 'wb') as file:
         file.write(response.content)
+    logging.info(f'Downloaded file {filename}')
     return filename
 
 
@@ -64,6 +68,13 @@ def save_photo_on_server(comic_json):
     vk_url = f'https://api.vk.com/method/{method_name}'
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
+    logging.info(f'Uploaded photo {photo_filename} to server')
+    try:
+        os.remove(f'./{photo_filename}')
+        logging.info(f'Deleted file {photo_filename}')
+    except FileNotFoundError:
+        logging.exception()
+
     return response.json()['response']
 
 
@@ -89,13 +100,24 @@ def post_photo_on_wall():
     }
     response = requests.post(vk_url, params=payload)
     response.raise_for_status()
+    logging.info('Posted photo on the wall')
 
 
 if __name__ == '__main__':
     load_dotenv()
+    logging.basicConfig(
+        filename="comics.log",
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        filemode='w',
+    )
 
     ACCESS_TOKEN = os.getenv('VK_ACCESS_TOKEN')
-    GROUP_ID = 204986685
+    GROUP_ID = os.getenv('GROUP_ID')
     VK_API_VERSION = 5.131
-
-    post_photo_on_wall()
+    try:
+        post_photo_on_wall()
+    except (HTTPError, ConnectionError) as error:
+        logging.exception(error)
+    except KeyError as error:
+        logging.exception(error)
