@@ -115,6 +115,7 @@ if __name__ == '__main__':
     ACCESS_TOKEN = os.getenv('VK_ACCESS_TOKEN')
     GROUP_ID = os.getenv('GROUP_ID')
     VK_API_VERSION = 5.131
+
     try:
         post_photo_on_wall()
     except (HTTPError, ConnectionError) as error:
