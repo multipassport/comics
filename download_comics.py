@@ -1,6 +1,8 @@
 import os
 import requests
 
+from dotenv import load_dotenv
+
 
 def get_comic_json():
     xkcd_url = 'https://xkcd.com/'
@@ -14,7 +16,6 @@ def get_comic_json():
 
 def download_image(comic_json):
     comic_link = comic_json['img']
-    print(comic_link)
     filename = os.path.split(comic_link)[-1]
 
     response = requests.get(comic_link)
@@ -22,8 +23,79 @@ def download_image(comic_json):
 
     with open(filename, 'wb') as file:
         file.write(response.content)
+    return filename
+
+
+def get_upload_link_and_ids():
+    method_name = 'photos.getWallUploadServer'
+    vk_url = f'https://api.vk.com/method/{method_name}'
+    payload = {
+        'access_token': ACCESS_TOKEN,
+        'v': VK_API_VERSION,
+        'group_id': GROUP_ID,
+    }
+    response = requests.get(vk_url, params=payload)
+    response.raise_for_status()
+    return response.json()['response']
+
+
+def get_server_url_and_photos_hash(photo, server):
+    photo_filepath = f'./{photo}'
+    with open(photo_filepath, 'rb') as file:
+        files = {'photo': file}
+        response = requests.post(server, files=files)
+        response.raise_for_status()
+    return response.json()
+
+
+def save_photo_on_server(comic_json):
+    photo_filename = download_image(comic_json)
+    upload_url = get_upload_link_and_ids()['upload_url']
+
+    server_answer = get_server_url_and_photos_hash(photo_filename, upload_url)
+    payload = {
+        'access_token': ACCESS_TOKEN,
+        'v': VK_API_VERSION,
+        'group_id': GROUP_ID,
+        'photo': server_answer['photo'],
+        'hash': server_answer['hash'],
+        'server': server_answer['server'],
+    }
+    method_name = 'photos.saveWallPhoto'
+    vk_url = f'https://api.vk.com/method/{method_name}'
+    response = requests.get(vk_url, params=payload)
+    response.raise_for_status()
+    return response.json()['response']
+
+
+def post_photo_on_wall():
+    comic_json = get_comic_json()
+    caption = comic_json['alt']
+
+    photo_params = save_photo_on_server(comic_json)
+    photo_id = photo_params[0]['id']
+    owner_id = photo_params[0]['owner_id']
+
+    method_name = 'wall.post'
+    vk_url = f'https://api.vk.com/method/{method_name}'
+    payload = {
+        'access_token': ACCESS_TOKEN,
+        'v': VK_API_VERSION,
+        'attachments': f'photo{owner_id}_{photo_id}',
+        'owner_id': f'-{GROUP_ID}',
+        'message': caption,
+        'from_group': 1,
+    }
+    response = requests.post(vk_url, params=payload)
+    response.raise_for_status()
+    print(response.json())
 
 
 if __name__ == '__main__':
-    comic_json = get_comic_json()
-    download_image(comic_json)
+    load_dotenv()
+
+    ACCESS_TOKEN = os.getenv('VK_ACCESS_TOKEN')
+    GROUP_ID = 204986685
+    VK_API_VERSION = 5.131
+
+    post_photo_on_wall()
