@@ -2,11 +2,10 @@ import os
 import requests
 
 from dotenv import load_dotenv
+from random import randint
 
-
-def get_comic_json():
+def get_comic_json(comic_number):
     xkcd_url = 'https://xkcd.com/'
-    comic_number = 353
     full_url = os.path.join(f'{xkcd_url}{comic_number}', 'info.0.json')
 
     response = requests.get(full_url)
@@ -69,7 +68,9 @@ def save_photo_on_server(comic_json):
 
 
 def post_photo_on_wall():
-    comic_json = get_comic_json()
+    last_comic_number = get_comic_json('')['num']
+    comic_to_download_number = randint(1, last_comic_number)
+    comic_json = get_comic_json(comic_to_download_number)
     caption = comic_json['alt']
 
     photo_params = save_photo_on_server(comic_json)
@@ -88,7 +89,6 @@ def post_photo_on_wall():
     }
     response = requests.post(vk_url, params=payload)
     response.raise_for_status()
-    print(response.json())
 
 
 if __name__ == '__main__':
