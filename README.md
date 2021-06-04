@@ -1,6 +1,6 @@
 # Публикация комиксов в контакте
 
-Данный проект загружает случайный комикс с сайта (https://xkcd.com/) и постит его на стене группы [ВК](https://vk.com/).
+Данный проект загружает случайный комикс с сайта https://xkcd.com/ и постит его на стене группы [ВК](https://vk.com/).
 
 # Как установить
 
@@ -9,8 +9,8 @@
 pip install -r requirements.txt
 ```
 Создайте файл `.env` рядом с `comics.py`, в котором должны быть указаны:
-`VK_ACCESS_TOKEN` - токен доступа VK. Получается [здесь](https://vk.com/dev/implicit_flow_user)
-`GROUP_ID` - ID группы VK. Можно узнать [здесь](https://regvk.com/id/)
+* `VK_ACCESS_TOKEN` - токен доступа VK. Получается [здесь](https://vk.com/dev/implicit_flow_user)
+* `GROUP_ID` - ID группы VK. Можно узнать [здесь](https://regvk.com/id/)
 
 # Запуск
 
