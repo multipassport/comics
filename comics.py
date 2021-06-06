@@ -8,7 +8,7 @@ from requests.exceptions import HTTPError, ConnectionError
 from urllib.parse import urlsplit
 
 
-def get_comic_json(comic_number):
+def get_xkcd_response(comic_number):
     xkcd_url = 'https://xkcd.com/'
     full_url = os.path.join(f'{xkcd_url}{comic_number}', 'info.0.json')
 
@@ -17,9 +17,8 @@ def get_comic_json(comic_number):
     return response.json()
 
 
-def download_image(comic_json):
-    comic_link = comic_json['img']
-    comic_filepath = os.path.split(urlsplit(comic_json['img']).path)[-1]
+def download_image(comic_link):
+    comic_filepath = os.path.split(urlsplit(comic_link).path)[-1]
 
     response = requests.get(comic_link)
     response.raise_for_status()
@@ -79,12 +78,13 @@ def save_photo_on_server(
 
 
 def download_random_comic():
-    last_comic_number = get_comic_json('')['num']
+    last_comic_number = get_xkcd_response('')['num']
     comic_to_download_number = randint(1, last_comic_number)
-    comic_json = get_comic_json(comic_to_download_number)
+    xkcd_response = get_xkcd_response(comic_to_download_number)
 
-    caption = comic_json['alt']
-    comic_filepath = download_image(comic_json)
+    caption = xkcd_response['alt']
+    comic_link = xkcd_response['img']
+    comic_filepath = download_image(comic_link)
     return comic_filepath, caption
 
 
