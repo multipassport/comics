@@ -8,8 +8,11 @@
 ```bash
 pip install -r requirements.txt
 ```
+Создайте приложение ВК по [ссылке](https://vk.com/apps?act=manage). Id приложения, указанный в адресной строке понадобится вам при создании токена.
+
 Создайте файл `.env` рядом с `comics.py`, в котором должны быть указаны:
-* `VK_ACCESS_TOKEN` - токен доступа VK. Получается [здесь](https://vk.com/dev/implicit_flow_user)
+* `VK_ACCESS_TOKEN` - токен доступа VK. Получается [здесь](https://vk.com/dev/implicit_flow_user). Приложению нужно будет предоставить доступ к фотографиям, группам, стене, администрированию группой и доступу к API, когда вы оффлайн. Разрешения можно получить по этой ссылке, где `client_id` - id вашего приложения:
+`https://oauth.vk.com/authorize?client_id=7871719&scope=photos,groups,wall,offline,manage&response_type=token`
 * `GROUP_ID` - ID группы VK. Можно узнать [здесь](https://regvk.com/id/)
 
 ### Запуск
