@@ -19,16 +19,15 @@ def get_comic_json(comic_number):
 
 def download_image(comic_json):
     comic_link = comic_json['img']
-    filename = os.path.split(comic_link)[-1]
+    comic_filepath = os.path.split(urlsplit(comic_json['img']).path)[-1]
 
     response = requests.get(comic_link)
     response.raise_for_status()
 
-    with open(filename, 'wb') as file:
+    with open(comic_filepath, 'wb') as file:
         file.write(response.content)
-    logging.info(f'Downloaded file {filename}')
-    raise ValueError
-    return filename
+    logging.info(f'Downloaded file {comic_filepath}')
+    return comic_filepath
 
 
 def get_upload_link_and_ids():
@@ -55,11 +54,7 @@ def get_server_url_and_photos_hash(photo, server):
     return response.json()
 
 
-def save_photo_on_server(comic_json):
-    photo_filename = download_image(comic_json)
-    upload_url = get_upload_link_and_ids()['upload_url']
-
-    server_answer = get_server_url_and_photos_hash(photo_filename, upload_url)
+def save_photo_on_server(server_answer, comic_filepath):
     payload = {
         'access_token': ACCESS_TOKEN,
         'v': VK_API_VERSION,
@@ -73,18 +68,31 @@ def save_photo_on_server(comic_json):
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
     check_response_for_error(response)
-    logging.info(f'Uploaded photo {photo_filename} to server')
+    logging.info(f'Uploaded photo {comic_filepath} to server')
     return response.json()['response']
 
 
-def post_photo_on_wall():
-    try:
-        last_comic_number = get_comic_json('')['num']
-        comic_to_download_number = randint(1, last_comic_number)
-        comic_json = get_comic_json(comic_to_download_number)
-        caption = comic_json['alt']
+def download_random_comic():
+    last_comic_number = get_comic_json('')['num']
+    comic_to_download_number = randint(1, last_comic_number)
+    comic_json = get_comic_json(comic_to_download_number)
 
-        photo_params = save_photo_on_server(comic_json)
+    caption = comic_json['alt']
+    comic_filepath = download_image(comic_json)
+    return comic_filepath, caption
+
+
+def post_comic_on_wall():
+    try:
+        comic_filepath, caption = download_random_comic()
+        upload_url = get_upload_link_and_ids()['upload_url']
+
+        server_answer = get_server_url_and_photos_hash(
+            comic_filepath,
+            upload_url
+        )
+
+        photo_params = save_photo_on_server(server_answer, comic_filepath)
         photo_id = photo_params[0]['id']
         owner_id = photo_params[0]['owner_id']
 
@@ -107,8 +115,7 @@ def post_photo_on_wall():
     except KeyError as error:
         logging.exception(error)
     finally:
-        filepath = os.path.split(urlsplit(comic_json['img']).path)[-1]
-        os.remove(filepath)
+        os.remove(comic_filepath)
 
 
 def check_response_for_error(response):
@@ -131,4 +138,4 @@ if __name__ == '__main__':
     GROUP_ID = os.getenv('GROUP_ID')
     VK_API_VERSION = 5.131
 
-    post_photo_on_wall()
+    post_comic_on_wall()
