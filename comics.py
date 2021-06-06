@@ -39,6 +39,7 @@ def get_upload_link_and_ids():
     }
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
+    check_response_for_error(response)
     return response.json()['response']
 
 
@@ -48,6 +49,7 @@ def get_server_url_and_photos_hash(photo, server):
         files = {'photo': file}
         response = requests.post(server, files=files)
         response.raise_for_status()
+        check_response_for_error(response)
     return response.json()
 
 
@@ -68,13 +70,13 @@ def save_photo_on_server(comic_json):
     vk_url = f'https://api.vk.com/method/{method_name}'
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
+    check_response_for_error(response)
     logging.info(f'Uploaded photo {photo_filename} to server')
     try:
         os.remove(f'./{photo_filename}')
         logging.info(f'Deleted file {photo_filename}')
     except FileNotFoundError:
         logging.exception()
-
     return response.json()['response']
 
 
@@ -100,7 +102,15 @@ def post_photo_on_wall():
     }
     response = requests.post(vk_url, params=payload)
     response.raise_for_status()
+    check_response_for_error(response)
     logging.info('Posted photo on the wall')
+
+
+def check_response_for_error(response):
+    answer = response.json()
+    if 'error' in answer:
+        logging.error(answer['error'])
+        raise HTTPError
 
 
 if __name__ == '__main__':
