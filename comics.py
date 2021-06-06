@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv
 from random import randint
 from requests.exceptions import HTTPError, ConnectionError
+from urllib.parse import urlsplit
 
 
 def get_comic_json(comic_number):
@@ -26,6 +27,7 @@ def download_image(comic_json):
     with open(filename, 'wb') as file:
         file.write(response.content)
     logging.info(f'Downloaded file {filename}')
+    raise ValueError
     return filename
 
 
@@ -72,38 +74,41 @@ def save_photo_on_server(comic_json):
     response.raise_for_status()
     check_response_for_error(response)
     logging.info(f'Uploaded photo {photo_filename} to server')
-    try:
-        os.remove(f'./{photo_filename}')
-        logging.info(f'Deleted file {photo_filename}')
-    except FileNotFoundError:
-        logging.exception()
     return response.json()['response']
 
 
 def post_photo_on_wall():
-    last_comic_number = get_comic_json('')['num']
-    comic_to_download_number = randint(1, last_comic_number)
-    comic_json = get_comic_json(comic_to_download_number)
-    caption = comic_json['alt']
+    try:
+        last_comic_number = get_comic_json('')['num']
+        comic_to_download_number = randint(1, last_comic_number)
+        comic_json = get_comic_json(comic_to_download_number)
+        caption = comic_json['alt']
 
-    photo_params = save_photo_on_server(comic_json)
-    photo_id = photo_params[0]['id']
-    owner_id = photo_params[0]['owner_id']
+        photo_params = save_photo_on_server(comic_json)
+        photo_id = photo_params[0]['id']
+        owner_id = photo_params[0]['owner_id']
 
-    method_name = 'wall.post'
-    vk_url = f'https://api.vk.com/method/{method_name}'
-    payload = {
-        'access_token': ACCESS_TOKEN,
-        'v': VK_API_VERSION,
-        'attachments': f'photo{owner_id}_{photo_id}',
-        'owner_id': f'-{GROUP_ID}',
-        'message': caption,
-        'from_group': 1,
-    }
-    response = requests.post(vk_url, params=payload)
-    response.raise_for_status()
-    check_response_for_error(response)
-    logging.info('Posted photo on the wall')
+        method_name = 'wall.post'
+        vk_url = f'https://api.vk.com/method/{method_name}'
+        payload = {
+            'access_token': ACCESS_TOKEN,
+            'v': VK_API_VERSION,
+            'attachments': f'photo{owner_id}_{photo_id}',
+            'owner_id': f'-{GROUP_ID}',
+            'message': caption,
+            'from_group': 1,
+        }
+        response = requests.post(vk_url, params=payload)
+        response.raise_for_status()
+        check_response_for_error(response)
+        logging.info('Posted photo on the wall')
+    except (HTTPError, ConnectionError) as error:
+        logging.exception(error)
+    except KeyError as error:
+        logging.exception(error)
+    finally:
+        filepath = os.path.split(urlsplit(comic_json['img']).path)[-1]
+        os.remove(filepath)
 
 
 def check_response_for_error(response):
@@ -126,9 +131,4 @@ if __name__ == '__main__':
     GROUP_ID = os.getenv('GROUP_ID')
     VK_API_VERSION = 5.131
 
-    try:
-        post_photo_on_wall()
-    except (HTTPError, ConnectionError) as error:
-        logging.exception(error)
-    except KeyError as error:
-        logging.exception(error)
+    post_photo_on_wall()
