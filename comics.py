@@ -39,8 +39,9 @@ def get_upload_link_and_ids(access_token, group_id, vk_api_version):
     }
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
-    check_response_for_error(response)
-    return response.json()['response']
+    answer = response.json()
+    check_response_for_error(answer)
+    return answer['response']
 
 
 def get_server_url_and_photos_hash(photo, server):
@@ -48,9 +49,10 @@ def get_server_url_and_photos_hash(photo, server):
     with open(photo_filepath, 'rb') as file:
         files = {'photo': file}
         response = requests.post(server, files=files)
-        response.raise_for_status()
-        check_response_for_error(response)
-    return response.json()
+    response.raise_for_status()
+    answer = response.json()
+    check_response_for_error(answer)
+    return answer
 
 
 def save_photo_on_server(
@@ -72,9 +74,10 @@ def save_photo_on_server(
     vk_url = f'https://api.vk.com/method/{method_name}'
     response = requests.get(vk_url, params=payload)
     response.raise_for_status()
-    check_response_for_error(response)
+    answer = response.json()
+    check_response_for_error(answer)
     logging.info(f'Uploaded photo {comic_filepath} to server')
-    return response.json()['response']
+    return answer['response']
 
 
 def download_random_comic():
@@ -124,7 +127,8 @@ def post_comic_on_wall(access_token, group_id, vk_api_version):
         }
         response = requests.post(vk_url, params=payload)
         response.raise_for_status()
-        check_response_for_error(response)
+        answer = response.json()
+        check_response_for_error(answer)
         logging.info('Posted photo on the wall')
     except (HTTPError, ConnectionError) as error:
         logging.exception(error)
@@ -134,8 +138,7 @@ def post_comic_on_wall(access_token, group_id, vk_api_version):
         os.remove(comic_filepath)
 
 
-def check_response_for_error(response):
-    answer = response.json()
+def check_response_for_error(answer):
     if 'error' in answer:
         logging.error(answer['error'])
         raise HTTPError
@@ -144,7 +147,7 @@ def check_response_for_error(response):
 if __name__ == '__main__':
     load_dotenv()
     logging.basicConfig(
-        filename="comics.log",
+        filename='comics.log',
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         filemode='w',
