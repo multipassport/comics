@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+import sys
 
 from dotenv import load_dotenv
 from random import randint
@@ -94,6 +95,11 @@ def download_random_comic():
 def post_comic_on_wall(access_token, group_id, vk_api_version):
     try:
         comic_filepath, caption = download_random_comic()
+    except (HTTPError, ConnectionError) as error:
+        logging.exception(error)
+        sys.exit(1)
+
+    try:
         upload_url = get_upload_link_and_ids(
             access_token,
             group_id,
@@ -140,8 +146,7 @@ def post_comic_on_wall(access_token, group_id, vk_api_version):
 
 def check_response_for_error(answer):
     if 'error' in answer:
-        logging.error(answer['error'])
-        raise HTTPError
+        raise HTTPError(answer['error'])
 
 
 if __name__ == '__main__':
