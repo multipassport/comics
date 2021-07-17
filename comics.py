@@ -57,7 +57,9 @@ def get_server_url_and_photos_hash(photo, server):
 
 
 def save_photo_on_server(
-        server_answer,
+        image,
+        image_hash,
+        server_id,
         comic_filepath,
         access_token,
         group_id,
@@ -67,9 +69,9 @@ def save_photo_on_server(
         'access_token': access_token,
         'v': vk_api_version,
         'group_id': group_id,
-        'photo': server_answer['photo'],
-        'hash': server_answer['hash'],
-        'server': server_answer['server'],
+        'photo': image,
+        'hash': image_hash,
+        'server': server_id,
     }
     method_name = 'photos.saveWallPhoto'
     vk_url = f'https://api.vk.com/method/{method_name}'
@@ -103,16 +105,20 @@ def post_comic_on_wall(access_token, group_id, vk_api_version):
         upload_url = get_upload_link_and_ids(
             access_token,
             group_id,
-            vk_api_version
-        )['upload_url']
+            vk_api_version)['upload_url']
 
         server_answer = get_server_url_and_photos_hash(
             comic_filepath,
             upload_url,
         )
+        image_metadata = server_answer['photo']
+        image_hash = server_answer['hash']
+        server_id = server_answer['server']
 
         photo_params = save_photo_on_server(
-            server_answer,
+            image_metadata,
+            image_hash,
+            server_id,
             comic_filepath,
             access_token,
             group_id,
@@ -136,9 +142,7 @@ def post_comic_on_wall(access_token, group_id, vk_api_version):
         answer = response.json()
         check_response_for_error(answer)
         logging.info('Posted photo on the wall')
-    except (HTTPError, ConnectionError) as error:
-        logging.exception(error)
-    except KeyError as error:
+    except (HTTPError, ConnectionError, KeyError) as error:
         logging.exception(error)
     finally:
         os.remove(comic_filepath)
